@@ -43,6 +43,19 @@ export default function domBuilder(struct, location) {
         location.appendChild(renderedDom);
     }
 
+    Object.defineProperty(renderedDom, "querySelector", {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value: function() {},
+    });
+    Object.defineProperty(renderedDom, "querySelectorAll", {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value: function() {},
+    });
+
     return renderedDom;
 }
 
