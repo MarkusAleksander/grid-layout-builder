@@ -1,0 +1,15 @@
+{
+    "presets": [
+        [
+            "@babel/env",
+            {
+                "modules": false,
+                "exclude": ["transform-typeof-symbol"]
+            }
+        ]
+    ],
+    "plugins": [
+        "@babel/plugin-transform-parameters",
+        "@babel/plugin-transform-arrow-functions"
+    ]
+}

@@ -1,0 +1,4 @@
+node_modules
+prod
+package-lock.json
+example_setup

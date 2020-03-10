@@ -1,0 +1,27 @@
+{
+    "parserOptions": {
+        "ecmaVersion": 6,
+        "sourceType": "module"
+    },
+    "env": {
+        "browser": true,
+        "node": false,
+        "jquery": true,
+        "es6": true
+    },
+    "extends": "eslint:recommended",
+    "rules": {
+        "consistent-return": "warn",
+        "default-case": "warn",
+        "default-param-last": "warn",
+        "dot-notation": "warn",
+        "eqeqeq": ["warn", "smart"],
+        "guard-for-in": "warn",
+        "no-alert": "error",
+        "no-empty-function": "warn"
+    },
+    "globals": {
+        "tagDataLayer": "readonly",
+        "THREE": "readonly"
+    }
+}
