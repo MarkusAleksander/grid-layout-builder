@@ -7,45 +7,39 @@ import domBuilder from "../../modules/domBuilder.js";
 onDomReady(main);
 
 function main() {
-    let DOMGridRoot = document.querySelector(config.target);
+    // * Get the editable grid
+    let editableGrid = document.querySelector(config.target);
 
-    if (!DOMGridRoot) return;
+    if (!editableGrid) return;
 
-    addToolbar(DOMGridRoot);
-    setItemsDraggable(DOMGridRoot);
+    // * Add a toolbar to the editable grid
+    addToolbar(editableGrid);
+    // * Create the placeholder to use in the drag drop operations
     createPlaceholder();
 
-    DOMGridRoot.addEventListener(
-        "mousemove",
-        onMouseMoveHandler.bind(DOMGridRoot)
-    );
-    DOMGridRoot.addEventListener("mousedown", onMouseDownHandler);
-    DOMGridRoot.addEventListener("mouseup", onMouseUpHandler);
+    // * Add event listeners to editable grid
+    [
+        {
+            mousemove: onMouseMoveHandler,
+        },
+        {
+            mousedown: onMouseDownHandler,
+        },
+        {
+            mouseup: onMouseUpHandler,
+        },
+    ].forEach((ev) => {
+        let k = Object.keys(ev)[0];
+        editableGrid.addEventListener(k, ev[k]);
+    });
 }
 
 function createPlaceholder() {
-    config.placeholder = domBuilder({ tag: "div" });
+    config.placeholder = domBuilder({
+        tag: "div",
+        attributes: { class: "grid-item--placeholder" },
+    });
 }
-
-function setItemsDraggable(DOMGridRoot) {
-    let c = DOMGridRoot.children,
-        l = c.length,
-        i = 0;
-    for (i; i < l; i++) {
-        let cc = c[i];
-
-        cc.setAttribute("data-draggable", i);
-        cc.style.backgroundColor =
-            "rgb(" +
-            (Math.random() * (255 - 0) + 0) +
-            "," +
-            (Math.random() * (255 - 0) + 0) +
-            "," +
-            (Math.random() * (255 - 0) + 0) +
-            ")";
-    }
-}
-
 function onMouseDownHandler(e) {
     console.log("Mouse Down");
 
@@ -60,13 +54,13 @@ function onMouseDownHandler(e) {
 
     let targetBounds = target.getBoundingClientRect();
     let mousePos = getCurrentMousePosition();
+
+    target.classList.add("is-dragging");
+
     target.style.width = targetBounds.width + "px";
     target.style.height = targetBounds.height + "px";
-    target.style.zIndex = 1000;
     target.style.top = mousePos.y - targetBounds.height / 2 + "px";
     target.style.left = mousePos.x - targetBounds.width / 2 + "px";
-    target.style.position = "absolute";
-    target.style.pointerEvents = "none";
 
     insertPlaceholder(target);
 }
@@ -77,11 +71,10 @@ function onMouseUpHandler(e) {
 
     let dragItem = config.currentDragItem;
 
-    dragItem.style.position = "relative";
-    dragItem.style.zIndex = 0;
-    dragItem.style.top = 0;
-    dragItem.style.left = 0;
-    dragItem.style.pointerEvents = "auto";
+    dragItem.classList.remove("is-dragging");
+
+    dragItem.style.top = "inherit";
+    dragItem.style.left = "inherit";
 
     config.isDragging = false;
     config.currentDragItem = null;
@@ -105,7 +98,7 @@ function onMouseMoveHandler(e) {
 
     // * Check current target item
     let target = e.target;
-    if (target !== config.placeholder) {
+    if (target.classList.contains("grid-item")) {
         positionPlaceholder(target);
     }
 }
@@ -157,7 +150,7 @@ function getCurrentMousePosition() {
 
 function addToolbar(DOMRoot) {
     DOMRoot.style.position = "relative";
-    domBuilder(
+    config.toolbar = domBuilder(
         generateToolbar(
             addGridItem.bind(null, DOMRoot, "start"),
             removeGridItem.bind(null, DOMRoot, "start"),

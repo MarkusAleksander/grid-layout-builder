@@ -26,3 +26,20 @@ html {
         user-select: none;
     }
 }
+
+.grid-item {
+    margin: 5px;
+    border: 1px solid #000;
+    background-color: #eee;
+}
+
+.grid-item--placeholder {
+    margin: 5px;
+    border: 2px dashed #2ef;
+}
+
+.grid-item.is-dragging {
+    position: absolute;
+    z-index: 1000;
+    pointer-events: none;
+}
