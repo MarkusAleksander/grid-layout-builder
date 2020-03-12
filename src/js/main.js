@@ -13,6 +13,7 @@ function main() {
 
     addToolbar(DOMGridRoot);
     setItemsDraggable(DOMGridRoot);
+    createPlaceholder();
 
     DOMGridRoot.addEventListener(
         "mousemove",
@@ -20,6 +21,10 @@ function main() {
     );
     DOMGridRoot.addEventListener("mousedown", onMouseDownHandler);
     DOMGridRoot.addEventListener("mouseup", onMouseUpHandler);
+}
+
+function createPlaceholder() {
+    config.placeholder = domBuilder({ tag: "div" });
 }
 
 function setItemsDraggable(DOMGridRoot) {
@@ -62,34 +67,67 @@ function onMouseDownHandler(e) {
     target.style.left = mousePos.x - targetBounds.width / 2 + "px";
     target.style.position = "absolute";
     target.style.pointerEvents = "none";
+
+    insertPlaceholder(target);
 }
 function onMouseUpHandler(e) {
     console.log("Mouse Up");
 
     if (e.button !== 0) return;
 
-    let target = config.currentDragItem;
+    let dragItem = config.currentDragItem;
 
-    target.style.position = "relative";
-    target.style.zIndex = 0;
-    target.style.top = 0;
-    target.style.left = 0;
-    target.style.pointerEvents = "auto";
+    dragItem.style.position = "relative";
+    dragItem.style.zIndex = 0;
+    dragItem.style.top = 0;
+    dragItem.style.left = 0;
+    dragItem.style.pointerEvents = "auto";
 
     config.isDragging = false;
     config.currentDragItem = null;
+
+    config.placeholder.insertAdjacentElement("afterend", dragItem);
+
+    removePlaceholder();
 }
 function onMouseMoveHandler(e) {
     trackMouseInGrid.call(this, e);
 
     if (!config.isDragging) return;
 
+    // * Update dragged item
     let mousePos = getCurrentMousePosition();
     let dragItem = config.currentDragItem;
-    let targetBounds = dragItem.getBoundingClientRect();
+    let draggedItem = dragItem.getBoundingClientRect();
 
-    dragItem.style.top = mousePos.y - targetBounds.height / 2 + "px";
-    dragItem.style.left = mousePos.x - targetBounds.width / 2 + "px";
+    dragItem.style.top = mousePos.y - draggedItem.height / 2 + "px";
+    dragItem.style.left = mousePos.x - draggedItem.width / 2 + "px";
+
+    // * Check current target item
+    let target = e.target;
+    if (target !== config.placeholder) {
+        positionPlaceholder(target);
+    }
+}
+
+function insertPlaceholder(location) {
+    location.insertAdjacentElement("beforebegin", config.placeholder);
+}
+
+function removePlaceholder() {
+    config.placeholder.remove();
+}
+
+function positionPlaceholder(el) {
+    let r = config.placeholder.compareDocumentPosition(el),
+        relPos = "beforebegin";
+    if (r === 2) {
+        relPos = "beforebegin";
+    }
+    if (r === 4) {
+        relPos = "afterend";
+    }
+    el.insertAdjacentElement(relPos, config.placeholder);
 }
 
 function trackMouseInGrid(e) {
