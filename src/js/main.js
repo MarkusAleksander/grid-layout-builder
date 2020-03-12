@@ -3,7 +3,6 @@ import config from "./config.js";
 import generateToolbar from "./toolbar.struct.js";
 import generateGridItem from "./gridItem.struct.js";
 import domBuilder from "../../modules/domBuilder.js";
-import debounce from "../../modules/debounce.js";
 
 onDomReady(main);
 
@@ -14,56 +13,13 @@ function main() {
 
     addToolbar(DOMGridRoot);
     setItemsDraggable(DOMGridRoot);
-    setDropzones(DOMGridRoot.children);
-    createDropPlaceholder();
-}
 
-function createDropPlaceholder() {
-    config.placeholderEl = domBuilder({
-        tag: "div",
-        attributes: { class: "grid-item--placeholder" },
-    });
-}
-
-function setDropzone(DOMGridRoot) {
     DOMGridRoot.addEventListener(
-        "dragover",
-        debounce(onDragOverHandler, 50, true)
+        "mousemove",
+        onMouseMoveHandler.bind(DOMGridRoot)
     );
-    DOMGridRoot.addEventListener("drop", onDropHandler);
-}
-
-function setDropzones(DOMGridItems) {
-    let i = 0,
-        l = DOMGridItems.length;
-    for (i; i < l; i++) {
-        DOMGridItems[i].addEventListener(
-            "dragover",
-            debounce(onDragOverHandler, 50, true)
-        );
-    }
-}
-
-function onDragOverHandler(e) {
-    e.preventDefault();
-    config.previousDragOverTarget = config.currentDragOverTarget;
-    config.currentDragOverTarget = e.target;
-
-    if (config.previousDragOverTarget === config.currentDragOverTarget) return;
-
-    config.currentDragOverTarget.insertAdjacentElement(
-        "beforebegin",
-        config.placeholderEl
-    );
-
-    console.log(e.target);
-}
-function onDropHandler(e) {
-    e.preventDefault();
-    const data = e.dataTransfer.getData("text/plain");
-    let el = document.querySelector('[data-draggable="' + data + '"]');
-    config.placeholderEl.remove();
-    e.target.insertAdjacentElement("afterend", el);
+    DOMGridRoot.addEventListener("mousedown", onMouseDownHandler);
+    DOMGridRoot.addEventListener("mouseup", onMouseUpHandler);
 }
 
 function setItemsDraggable(DOMGridRoot) {
@@ -73,7 +29,6 @@ function setItemsDraggable(DOMGridRoot) {
     for (i; i < l; i++) {
         let cc = c[i];
 
-        cc.setAttribute("draggable", true);
         cc.setAttribute("data-draggable", i);
         cc.style.backgroundColor =
             "rgb(" +
@@ -83,20 +38,85 @@ function setItemsDraggable(DOMGridRoot) {
             "," +
             (Math.random() * (255 - 0) + 0) +
             ")";
-        cc.addEventListener("dragstart", onDragStartHandler);
-        cc.addEventListener("dragend", onDragEndHandler);
     }
 }
-function onDragEndHandler(e) {
-    config.placeholderEl.remove();
+
+function onMouseDownHandler(e) {
+    console.log("Mouse Down");
+
+    if (e.button !== 0) return;
+
+    let target = e.target;
+
+    if (!e.target.classList.contains("grid-item")) return;
+
+    config.currentDragItem = e.target;
+    config.isDragging = true;
+
+    let targetBounds = target.getBoundingClientRect();
+    let mousePos = getCurrentMousePosition();
+    target.style.width = targetBounds.width + "px";
+    target.style.height = targetBounds.height + "px";
+    target.style.zIndex = 1000;
+    target.style.top = mousePos.y - targetBounds.height / 2 + "px";
+    target.style.left = mousePos.x - targetBounds.width / 2 + "px";
+    target.style.position = "absolute";
+    target.style.pointerEvents = "none";
 }
-function onDragStartHandler(e) {
-    e.dataTransfer.setData(
-        "text/plain",
-        e.target.getAttribute("data-draggable")
-    );
-    e.dataTransfer.dropEffect = "move";
+function onMouseUpHandler(e) {
+    console.log("Mouse Up");
+
+    if (e.button !== 0) return;
+
+    let target = config.currentDragItem;
+
+    target.style.position = "relative";
+    target.style.zIndex = 0;
+    target.style.top = 0;
+    target.style.left = 0;
+    target.style.pointerEvents = "auto";
+
+    config.isDragging = false;
+    config.currentDragItem = null;
 }
+function onMouseMoveHandler(e) {
+    trackMouseInGrid.call(this, e);
+
+    if (!config.isDragging) return;
+
+    let mousePos = getCurrentMousePosition();
+    let dragItem = config.currentDragItem;
+    let targetBounds = dragItem.getBoundingClientRect();
+
+    dragItem.style.top = mousePos.y - targetBounds.height / 2 + "px";
+    dragItem.style.left = mousePos.x - targetBounds.width / 2 + "px";
+}
+
+function trackMouseInGrid(e) {
+    let bounds = this.getBoundingClientRect();
+    config.mouseX = e.clientX - bounds.x;
+    config.mouseY = e.clientY - bounds.y;
+
+    if (config.mouseX < 0) {
+        config.mouseX = 0;
+    }
+    if (config.mouseY < 0) {
+        config.mouseY = 0;
+    }
+    if (config.mouseX > bounds.width) {
+        config.mouseX = bounds.width;
+    }
+    if (config.mouseY > bounds.height) {
+        config.mouseY = bounds.height;
+    }
+}
+function getCurrentMousePosition() {
+    return {
+        x: config.mouseX,
+        y: config.mouseY,
+    };
+}
+
 function addToolbar(DOMRoot) {
     DOMRoot.style.position = "relative";
     domBuilder(

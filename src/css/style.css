@@ -21,4 +21,8 @@ html {
     margin: 0 auto;
     grid-template-columns: repeat(3, 1fr);
     grid-auto-rows: 100px;
+
+    > * {
+        user-select: none;
+    }
 }
