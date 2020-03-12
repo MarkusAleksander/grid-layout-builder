@@ -1,9 +1,14 @@
-export default function generateToolbar(id, addItemEvent, removeItemEvent) {
+export default function generateToolbar(
+    addItemToStart,
+    removeItemFromStart,
+    addItemToEnd,
+    removeItemFromEnd
+) {
     const toolbar = {
         tag: "div",
         attributes: {
-            class: `grid-toolbar grid-toolbar--${id}`,
-            id: `grid-toolbar--${id}`,
+            class: `grid-toolbar`,
+            id: `grid-toolbar`,
         },
         styles: {
             "position": "absolute",
@@ -15,19 +20,37 @@ export default function generateToolbar(id, addItemEvent, removeItemEvent) {
         children: [
             {
                 tag: "button",
-                children: ["Add item"],
+                children: ["Add new item to start"],
                 events: [
                     {
-                        click: addItemEvent,
+                        click: addItemToStart,
                     },
                 ],
             },
             {
                 tag: "button",
-                children: ["Remove item"],
+                children: ["Remove item from start"],
                 events: [
                     {
-                        click: removeItemEvent,
+                        click: removeItemFromStart,
+                    },
+                ],
+            },
+            {
+                tag: "button",
+                children: ["Add new item to end"],
+                events: [
+                    {
+                        click: addItemToEnd,
+                    },
+                ],
+            },
+            {
+                tag: "button",
+                children: ["Remove item from end"],
+                events: [
+                    {
+                        click: removeItemFromEnd,
                     },
                 ],
             },

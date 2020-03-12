@@ -1,6 +1,7 @@
 /**
  * Search an object by checking for value and return the found objecy
  */
+// ! NOT READY FOR USE - MUCH TO DO
 export default function findNestedPropertyByValue(
     obj,
     valueToFind,
@@ -18,7 +19,7 @@ export default function findNestedPropertyByValue(
     let i = 0;
     for (i; i < arrayable.length; i++) {
         if (arrayable[i] === valueToFind) {
-            found = arrayable[i];
+            found = { i: arrayable[i] };
             break;
         }
         if (Array.isArray(arrayable[i]) || typeof arrayable[i] === "object") {
