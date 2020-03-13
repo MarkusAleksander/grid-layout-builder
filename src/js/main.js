@@ -4,6 +4,7 @@ import toolbar from "./toolbar.struct.js";
 import gridItem from "./gridItem.struct.js";
 import placeholder from "./placeholder.struct.js";
 import domBuilder from "../../modules/domBuilder.js";
+import formatNumber from "../../modules/formatNumber.js";
 
 // * Run on DOM Load
 onDomReady(main);
@@ -15,6 +16,8 @@ function main() {
 
     // * Return if no grid
     if (!editableGrid) return;
+
+    config.DOMGrid = editableGrid;
 
     // * Add a toolbar to the editable grid
     addToolbarToGrid(editableGrid);
@@ -34,6 +37,8 @@ function main() {
         let k = Object.keys(ev)[0];
         editableGrid.addEventListener(k, ev[k].bind(editableGrid));
     });
+
+    generateVGrid();
 }
 
 // * ----- Placeholder Management ------ * //
@@ -115,6 +120,7 @@ function onMouseUpHandler(e) {
     untrackGrabbedGridtItem();
 
     removePlaceholder();
+    fillVGrid();
 }
 function onMouseMoveHandler(e) {
     trackMouseInGrid.call(this, e);
@@ -206,4 +212,96 @@ function removeGridItem(DOMRoot, location) {
     if (targetItem) {
         targetItem.remove();
     }
+}
+
+// * ------ Layout grid ------ * //
+
+function getNumGridRows() {
+    return getComputedStyle(config.DOMGrid).gridTemplateRows.split(" ").length;
+}
+function getNumGridCols() {
+    return getComputedStyle(config.DOMGrid).gridTemplateColumns.split(" ")
+        .length;
+}
+
+function fillVGrid() {
+    clearVGrid();
+    let gridItems = config.DOMGrid.querySelectorAll(".grid-item");
+
+    let i = 0,
+        l = gridItems.length;
+
+    for (i; i < l; i++) {
+        let gridItem = gridItems[i];
+
+        // * Start positions
+        let colStart = calcColStart(gridItem.offsetLeft);
+        let rowStart = calcRowStart(gridItem.offsetTop);
+
+        // * Span size
+        let s = getComputedStyle(gridItem);
+        let colSpan = formatNumber(s.gridColumnEnd);
+        let rowSpan = formatNumber(s.gridRowEnd);
+
+        if (!colSpan) {
+            colSpan = calcColSpan(gridItem.clientWidth);
+        }
+        if (!rowSpan) {
+            rowSpan = calcRowSpan(gridItem.clientHeight);
+        }
+
+        let r = rowStart;
+
+        for (r; r < rowStart + rowSpan; r++) {
+            let c = colStart;
+            for (c; c < colStart + colSpan; c++) {
+                config.VGrid[r][c] = "O";
+            }
+        }
+    }
+    console.table(config.VGrid);
+}
+
+function clearVGrid() {
+    let i = 0;
+    let l = config.VGrid.length;
+    for (i; i < l; i++) {
+        let j = 0;
+        let jl = config.VGrid[i].length;
+        for (j; j < jl; j++) {
+            config.VGrid[i][j] = "X";
+        }
+    }
+}
+
+function generateVGrid() {
+    config.nRows = getNumGridRows();
+    config.nCols = getNumGridCols();
+
+    config.VGrid = Array(config.nRows);
+
+    let i = 0;
+    let l = config.VGrid.length;
+    for (i; i < l; i++) {
+        config.VGrid[i] = Array(config.nCols);
+    }
+
+    fillVGrid();
+}
+
+function calcRowSpan(height) {
+    let containerHeight = config.DOMGrid.clientHeight;
+    return Math.floor(height / (containerHeight / config.nRows));
+}
+function calcRowStart(height) {
+    let containerHeight = config.DOMGrid.clientHeight;
+    return Math.floor(height / (containerHeight / config.nRows));
+}
+function calcColSpan(width) {
+    let containerWidth = config.DOMGrid.clientWidth;
+    return Math.floor(width / (containerWidth / config.nCols));
+}
+function calcColStart(width) {
+    let containerWidth = config.DOMGrid.clientWidth;
+    return Math.floor(width / (containerWidth / config.nCols));
 }
