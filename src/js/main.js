@@ -19,9 +19,6 @@ function main() {
     // * Add a toolbar to the editable grid
     addToolbarToGrid(editableGrid);
 
-    // * Create the placeholder to use in the drag drop operations
-    config.placeholder = createPlaceholder();
-
     // * Add event listeners to editable grid
     [
         {
@@ -41,8 +38,16 @@ function main() {
 
 // * ----- Placeholder Management ------ * //
 function createPlaceholder() {
+    let dragItemStyles = getComputedStyle(config.currentDragItem);
+
     // * Create the placeholder element
-    return domBuilder(placeholder());
+
+    return domBuilder(
+        placeholder({
+            "grid-row-end": dragItemStyles.gridRowEnd,
+            "grid-column-end": dragItemStyles.gridColumnEnd,
+        })
+    );
 }
 function positionPlaceholder(location) {
     // * Compare position of placeholder to new location and insert accordingly
@@ -59,6 +64,7 @@ function positionPlaceholder(location) {
 function removePlaceholder() {
     // * Remove the placeholder from the DOM
     config.placeholder.remove();
+    config.placeholder = null;
 }
 
 // * ----- Toolbar Management ------- * //
@@ -80,38 +86,32 @@ function addToolbarToGrid(DOMRoot) {
 function onMouseDownHandler(e) {
     if (e.button !== 0) return;
 
-    this.classList.add("is-dragging-active");
     let target = e.target;
     if (!e.target.classList.contains("grid-item")) return;
 
-    trackGrabbedGridItem(e.target);
-
-    let targetBounds = target.getBoundingClientRect();
-    let mousePos = getCurrentMousePosition();
-
-    let dragItem = config.currentDragItem;
-
-    dragItem.classList.add("is-dragging");
+    this.classList.add("is-dragging-active");
+    let dragItem = trackGrabbedGridItem(e.target);
 
     let dragItemStyle = dragItem.style;
-
+    let targetBounds = target.getBoundingClientRect();
     dragItemStyle.width = targetBounds.width + "px";
     dragItemStyle.height = targetBounds.height + "px";
-    dragItemStyle.top = mousePos.y - targetBounds.height / 2 + "px";
-    dragItemStyle.left = mousePos.x - targetBounds.width / 2 + "px";
+
+    setGrabbedGridItemStylePosition();
+
+    config.currentDragItem.classList.add("is-dragging");
+
+    // * Create the placeholder to use in the drag drop operations
+    config.placeholder = createPlaceholder();
 
     positionPlaceholder(target);
 }
 function onMouseUpHandler(e) {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || !config.isDragging) return;
 
     this.classList.remove("is-dragging-active");
-
-    let dragItem = config.currentDragItem;
-
-    dragItem.classList.remove("is-dragging");
-
     placeGrabbedGridItem(config.placeholder, "afterend");
+    config.currentDragItem.classList.remove("is-dragging");
     untrackGrabbedGridtItem();
 
     removePlaceholder();
@@ -122,12 +122,7 @@ function onMouseMoveHandler(e) {
     if (!config.isDragging) return;
 
     // * Update dragged item
-    let mousePos = getCurrentMousePosition();
-    let dragItem = config.currentDragItem;
-    let draggedItem = dragItem.getBoundingClientRect();
-
-    dragItem.style.top = mousePos.y - draggedItem.height / 2 + "px";
-    dragItem.style.left = mousePos.x - draggedItem.width / 2 + "px";
+    setGrabbedGridItemStylePosition();
 
     // * Check current target item
     let target = e.target;
@@ -168,12 +163,21 @@ function trackGrabbedGridItem(target) {
     config.currentDragItem = target;
     config.currentDragItemStyle = target.style.cssText;
     config.isDragging = true;
+
+    return config.currentDragItem;
 }
 function untrackGrabbedGridtItem() {
     config.isDragging = false;
     config.currentDragItem.style = config.currentDragItemStyle;
     config.currentDragItemStyle = null;
     config.currentDragItem = null;
+}
+function setGrabbedGridItemStylePosition() {
+    let dragItem = config.currentDragItem;
+    let dragItemBounds = dragItem.getBoundingClientRect();
+    let mousePos = getCurrentMousePosition();
+    dragItem.style.top = mousePos.y - dragItemBounds.height / 2 + "px";
+    dragItem.style.left = mousePos.x - dragItemBounds.width / 2 + "px";
 }
 
 // * ----- Grid Item Management ----- * //
