@@ -55,7 +55,7 @@ const paths = {
  * Process Javascript Files
  */
 function javascript() {
-    return src(`${paths.js.src}*.js`)
+    return src(`${paths.js.src}main.js`)
         .pipe(
             rollup(
                 {

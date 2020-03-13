@@ -1,4 +1,4 @@
-export default function generateGridItem(content) {
+export default function gridItem(content) {
     const gridItem = {
         tag: "div",
         attributes: {

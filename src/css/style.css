@@ -25,10 +25,15 @@ html {
     > * {
         user-select: none;
     }
+
+    &.is-dragging-active {
+        cursor: grabbing;
+    }
 }
 
 .grid-item {
     margin: 5px;
+    cursor: grab;
     border: 1px solid #000;
     background-color: #eee;
 }
@@ -42,4 +47,5 @@ html {
     position: absolute;
     z-index: 1000;
     pointer-events: none;
+    box-shadow: 4px 4px 3px 2px #ccc;
 }

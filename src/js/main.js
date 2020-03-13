@@ -1,21 +1,26 @@
 import onDomReady from "../../modules/onDomReady.js";
 import config from "./config.js";
-import generateToolbar from "./toolbar.struct.js";
-import generateGridItem from "./gridItem.struct.js";
+import toolbar from "./toolbar.struct.js";
+import gridItem from "./gridItem.struct.js";
+import placeholder from "./placeholder.struct.js";
 import domBuilder from "../../modules/domBuilder.js";
 
+// * Run on DOM Load
 onDomReady(main);
 
+// * Main Entry point
 function main() {
     // * Get the editable grid
     let editableGrid = document.querySelector(config.target);
 
+    // * Return if no grid
     if (!editableGrid) return;
 
     // * Add a toolbar to the editable grid
-    addToolbar(editableGrid);
+    addToolbarToGrid(editableGrid);
+
     // * Create the placeholder to use in the drag drop operations
-    createPlaceholder();
+    config.placeholder = createPlaceholder();
 
     // * Add event listeners to editable grid
     [
@@ -30,56 +35,84 @@ function main() {
         },
     ].forEach((ev) => {
         let k = Object.keys(ev)[0];
-        editableGrid.addEventListener(k, ev[k]);
+        editableGrid.addEventListener(k, ev[k].bind(editableGrid));
     });
 }
 
+// * ----- Placeholder Management ------ * //
 function createPlaceholder() {
-    config.placeholder = domBuilder({
-        tag: "div",
-        attributes: { class: "grid-item--placeholder" },
-    });
+    // * Create the placeholder element
+    return domBuilder(placeholder());
 }
-function onMouseDownHandler(e) {
-    console.log("Mouse Down");
+function positionPlaceholder(location) {
+    // * Compare position of placeholder to new location and insert accordingly
+    let r = config.placeholder.compareDocumentPosition(location),
+        relPos = "beforebegin";
+    if (r === 2) {
+        relPos = "beforebegin";
+    }
+    if (r === 4) {
+        relPos = "afterend";
+    }
+    location.insertAdjacentElement(relPos, config.placeholder);
+}
+function removePlaceholder() {
+    // * Remove the placeholder from the DOM
+    config.placeholder.remove();
+}
 
+// * ----- Toolbar Management ------- * //
+function addToolbarToGrid(DOMRoot) {
+    // * Create a toolbar and add to the grid
+    DOMRoot.style.position = "relative";
+    config.toolbar = domBuilder(
+        toolbar(
+            addGridItem.bind(null, DOMRoot, "start"),
+            removeGridItem.bind(null, DOMRoot, "start"),
+            addGridItem.bind(null, DOMRoot, "end"),
+            removeGridItem.bind(null, DOMRoot, "end")
+        ),
+        DOMRoot
+    );
+}
+
+// * ----- Mouse Action Management ------- * //
+function onMouseDownHandler(e) {
     if (e.button !== 0) return;
 
+    this.classList.add("is-dragging-active");
     let target = e.target;
-
     if (!e.target.classList.contains("grid-item")) return;
 
-    config.currentDragItem = e.target;
-    config.isDragging = true;
+    trackGrabbedGridItem(e.target);
 
     let targetBounds = target.getBoundingClientRect();
     let mousePos = getCurrentMousePosition();
 
-    target.classList.add("is-dragging");
+    let dragItem = config.currentDragItem;
 
-    target.style.width = targetBounds.width + "px";
-    target.style.height = targetBounds.height + "px";
-    target.style.top = mousePos.y - targetBounds.height / 2 + "px";
-    target.style.left = mousePos.x - targetBounds.width / 2 + "px";
+    dragItem.classList.add("is-dragging");
 
-    insertPlaceholder(target);
+    let dragItemStyle = dragItem.style;
+
+    dragItemStyle.width = targetBounds.width + "px";
+    dragItemStyle.height = targetBounds.height + "px";
+    dragItemStyle.top = mousePos.y - targetBounds.height / 2 + "px";
+    dragItemStyle.left = mousePos.x - targetBounds.width / 2 + "px";
+
+    positionPlaceholder(target);
 }
 function onMouseUpHandler(e) {
-    console.log("Mouse Up");
-
     if (e.button !== 0) return;
+
+    this.classList.remove("is-dragging-active");
 
     let dragItem = config.currentDragItem;
 
     dragItem.classList.remove("is-dragging");
 
-    dragItem.style.top = "inherit";
-    dragItem.style.left = "inherit";
-
-    config.isDragging = false;
-    config.currentDragItem = null;
-
-    config.placeholder.insertAdjacentElement("afterend", dragItem);
+    placeGrabbedGridItem(config.placeholder, "afterend");
+    untrackGrabbedGridtItem();
 
     removePlaceholder();
 }
@@ -102,27 +135,6 @@ function onMouseMoveHandler(e) {
         positionPlaceholder(target);
     }
 }
-
-function insertPlaceholder(location) {
-    location.insertAdjacentElement("beforebegin", config.placeholder);
-}
-
-function removePlaceholder() {
-    config.placeholder.remove();
-}
-
-function positionPlaceholder(el) {
-    let r = config.placeholder.compareDocumentPosition(el),
-        relPos = "beforebegin";
-    if (r === 2) {
-        relPos = "beforebegin";
-    }
-    if (r === 4) {
-        relPos = "afterend";
-    }
-    el.insertAdjacentElement(relPos, config.placeholder);
-}
-
 function trackMouseInGrid(e) {
     let bounds = this.getBoundingClientRect();
     config.mouseX = e.clientX - bounds.x;
@@ -148,20 +160,25 @@ function getCurrentMousePosition() {
     };
 }
 
-function addToolbar(DOMRoot) {
-    DOMRoot.style.position = "relative";
-    config.toolbar = domBuilder(
-        generateToolbar(
-            addGridItem.bind(null, DOMRoot, "start"),
-            removeGridItem.bind(null, DOMRoot, "start"),
-            addGridItem.bind(null, DOMRoot, "end"),
-            removeGridItem.bind(null, DOMRoot, "end")
-        ),
-        DOMRoot
-    );
+function placeGrabbedGridItem(location, relPos) {
+    location.insertAdjacentElement(relPos, config.currentDragItem);
 }
+
+function trackGrabbedGridItem(target) {
+    config.currentDragItem = target;
+    config.currentDragItemStyle = target.style.cssText;
+    config.isDragging = true;
+}
+function untrackGrabbedGridtItem() {
+    config.isDragging = false;
+    config.currentDragItem.style = config.currentDragItemStyle;
+    config.currentDragItemStyle = null;
+    config.currentDragItem = null;
+}
+
+// * ----- Grid Item Management ----- * //
 function addGridItem(DOMRoot, location) {
-    let newItem = domBuilder(generateGridItem([`${DOMRoot.children.length}`]));
+    let newItem = domBuilder(gridItem([`${DOMRoot.children.length}`]));
     if (location === "start") {
         DOMRoot.prepend(newItem);
     } else if (location === "end") {
