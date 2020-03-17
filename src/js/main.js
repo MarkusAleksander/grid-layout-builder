@@ -38,6 +38,10 @@ function main() {
         editableGrid.addEventListener(k, ev[k].bind(editableGrid));
     });
 
+    config.DOMGridHeight = config.DOMGrid.clientHeight;
+    config.DOMGridWidth = config.DOMGrid.clientWidth;
+    config.gridItems = config.DOMGrid.querySelectorAll(".grid-item");
+
     generateVGrid();
 }
 
@@ -56,15 +60,20 @@ function createPlaceholder() {
 }
 function positionPlaceholder(location) {
     // * Compare position of placeholder to new location and insert accordingly
-    let r = config.placeholder.compareDocumentPosition(location),
-        relPos = "beforebegin";
-    if (r === 2) {
-        relPos = "beforebegin";
-    }
-    if (r === 4) {
-        relPos = "afterend";
-    }
-    location.insertAdjacentElement(relPos, config.placeholder);
+    // let r = config.placeholder.compareDocumentPosition(location),
+    //     relPos = "beforebegin";
+    // if (r === 2) {
+    //     relPos = "beforebegin";
+    // }
+    // if (r === 4) {
+    //     relPos = "afterend";
+    // }
+    // debugger;
+    config.placeholder.style.gridColumnStart = location.x;
+    config.placeholder.style.gridRowStart = location.y;
+    config.placeholder.style.gridColumnEnd = "span " + location.span.x;
+    config.placeholder.style.gridRowEnd = "span " + location.span.y;
+    config.DOMGrid.insertAdjacentElement("beforeend", config.placeholder);
 }
 function removePlaceholder() {
     // * Remove the placeholder from the DOM
@@ -108,11 +117,20 @@ function onMouseDownHandler(e) {
 
     // * Create the placeholder to use in the drag drop operations
     config.placeholder = createPlaceholder();
-
-    positionPlaceholder(target);
+    debugger;
+    positionPlaceholder({
+        x: calcColStart(dragItem.offsetLeft),
+        y: calcRowStart(dragItem.offsetTop),
+        span: {
+            x: calcColSpan(dragItem.width),
+            y: calcRowSpan(dragItem.height),
+        },
+    });
 }
 function onMouseUpHandler(e) {
     if (e.button !== 0 || !config.isDragging) return;
+
+    console.log(getCurrentMousePosition().gridPos);
 
     this.classList.remove("is-dragging-active");
     placeGrabbedGridItem(config.placeholder, "afterend");
@@ -153,11 +171,17 @@ function trackMouseInGrid(e) {
     if (config.mouseY > bounds.height) {
         config.mouseY = bounds.height;
     }
+
+    config.mouseGridPosition = {
+        col: Math.floor(config.mouseX / (config.DOMGridWidth / config.nCols)),
+        row: Math.floor(config.mouseY / (config.DOMGridHeight / config.nRows)),
+    };
 }
 function getCurrentMousePosition() {
     return {
         x: config.mouseX,
         y: config.mouseY,
+        gridPos: config.mouseGridPosition,
     };
 }
 
@@ -226,13 +250,12 @@ function getNumGridCols() {
 
 function fillVGrid() {
     clearVGrid();
-    let gridItems = config.DOMGrid.querySelectorAll(".grid-item");
 
     let i = 0,
-        l = gridItems.length;
+        l = config.gridItems.length;
 
     for (i; i < l; i++) {
-        let gridItem = gridItems[i];
+        let gridItem = config.gridItems[i];
 
         // * Start positions
         let colStart = calcColStart(gridItem.offsetLeft);
@@ -240,22 +263,15 @@ function fillVGrid() {
 
         // * Span size
         let s = getComputedStyle(gridItem);
-        let colSpan = formatNumber(s.gridColumnEnd);
-        let rowSpan = formatNumber(s.gridRowEnd);
-
-        if (!colSpan) {
-            colSpan = calcColSpan(gridItem.clientWidth);
-        }
-        if (!rowSpan) {
-            rowSpan = calcRowSpan(gridItem.clientHeight);
-        }
+        let colSpan = calcColSpan(gridItem.clientWidth);
+        let rowSpan = calcRowSpan(gridItem.clientHeight);
 
         let r = rowStart;
 
         for (r; r < rowStart + rowSpan; r++) {
             let c = colStart;
             for (c; c < colStart + colSpan; c++) {
-                config.VGrid[r][c] = "O";
+                config.VGrid[r][c] = i;
             }
         }
     }
@@ -290,18 +306,14 @@ function generateVGrid() {
 }
 
 function calcRowSpan(height) {
-    let containerHeight = config.DOMGrid.clientHeight;
-    return Math.floor(height / (containerHeight / config.nRows));
+    return Math.round(height / (config.DOMGridHeight / config.nRows));
 }
 function calcRowStart(height) {
-    let containerHeight = config.DOMGrid.clientHeight;
-    return Math.floor(height / (containerHeight / config.nRows));
+    return Math.round(height / (config.DOMGridHeight / config.nRows));
 }
 function calcColSpan(width) {
-    let containerWidth = config.DOMGrid.clientWidth;
-    return Math.floor(width / (containerWidth / config.nCols));
+    return Math.round(width / (config.DOMGridWidth / config.nCols));
 }
 function calcColStart(width) {
-    let containerWidth = config.DOMGrid.clientWidth;
-    return Math.floor(width / (containerWidth / config.nCols));
+    return Math.round(width / (config.DOMGridWidth / config.nCols));
 }
